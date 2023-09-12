@@ -1,9 +1,9 @@
 ﻿#include <stdio.h>
 
 // 구구단을 출력하는 함수
-void print_subtable(int start, int end) {
+void print_subtable(int start, int end, int num) {
     // 구구단 가로 버전 출력
-    for (int i = 1; i <= 9; i++) {
+    for (int i = 1; i <= num; i++) {
         for (int j = start; j <= end; j++) {
             // 출력되지 않는 빈 공간 유지
             if (j < i) {
@@ -39,7 +39,7 @@ int main() {
         }
 
         // 서브 테이블 출력
-        print_subtable(start, end);
+        print_subtable(start, end, n);
 
         // 서브 테이블 사이에 공백 줄 추가
         if (end != n) {
