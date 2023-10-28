@@ -1,114 +1,43 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
-#include <windows.h>
-#include <tlhelp32.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-int currentProcessIndex = 1; // 현재 프로세스 인덱스를 나타내는 변수
-int totalProcess = 0;
-
-// TreeNode 구조체 정의
-typedef struct TreeNode {
-    DWORD pid;
-    DWORD parentPid;
-    char name[MAX_PATH];
-    struct TreeNode* sibling;
-    struct TreeNode* child;
-} TreeNode;
-
-
-// TreeNode 생성 함수
-TreeNode* CreateTreeNode(DWORD pid, DWORD parentPid, const char* name) {
-    TreeNode* node = (TreeNode*)malloc(sizeof(TreeNode));
-    node->pid = pid;
-    node->parentPid = parentPid;
-    strncpy(node->name, name, MAX_PATH);
-    node->sibling = NULL;
-    node->child = NULL;
-    return node;
-}
-
-
-
-// 자식 노드를 추가하는 함수
-void InsertChild(TreeNode* parent, TreeNode* child) {
-    if (parent->child == NULL) {
-        parent->child = child;
-    }
-    else {
-        TreeNode* sibling = parent->child;
-        while (sibling->sibling != NULL) {
-            sibling = sibling->sibling;
-        }
-        sibling->sibling = child;
-    }
-}
-
-// 프로세스 트리를 출력하는 함수
-void PrintProcessTree(TreeNode* node, int level) {
-    
-    char indentation[512] = ""; // 들여쓰기를 나타내는 문자열
-
-    // 현재 레벨만큼 들여쓰기 공백 문자열 생성
-    for (int i = 0; i < level; i++) {
-        strcat(indentation, "  |");
-    }
-
- 
-
-    // 출력 형태를 들여쓰기, 프로세스 이름, 자신의 PID, 부모 PID
-    printf("%3d %s+-%s <%lu> <%lu>\n",currentProcessIndex, indentation, node->name, node->pid, node->parentPid);
-    currentProcessIndex++;
-
-    TreeNode* child = node->child;
-    while (child != NULL) {
-        PrintProcessTree(child, level + 1); // 재귀적으로 자식 노드 출력
-        child = child->sibling;
-    }
-}
+﻿#include <iostream>
+#include <wtypes.h> // 프로세스 개수를 얻기 위한 헤더
+#include <Psapi.h> // 프로세스 정보를 얻기 위한 헤더
+#include <TlHelp32.h> // 프로세스 스냅샷을 생성하기 위한 헤더
+#include "pstree.h" // PSTree 클래스 헤더
 
 int main() {
-    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-    PROCESSENTRY32 pe;
-    pe.dwSize = sizeof(PROCESSENTRY32);
 
-    TreeNode* root = NULL; // 루트 노드 초기화
+    /// 식별자 선언 ///
+    HANDLE hProcessSnap; // 프로세스 스냅샷 핸들
+    PROCESSENTRY32 pe32; // 프로세스 정보를 담는 구조체
+    int numOfProc = 0; // 실행 중인 프로세스 수
 
-    if (Process32First(snapshot, &pe)) {
-        do {
-            // WCHAR*를 char*로 변환
-            int len = WideCharToMultiByte(CP_UTF8, 0, pe.szExeFile, -1, NULL, 0, NULL, NULL);
-            char* exeName = (char*)malloc(len);
-            WideCharToMultiByte(CP_UTF8, 0, pe.szExeFile, -1, exeName, len, NULL, NULL);
-
-            TreeNode* node = CreateTreeNode(pe.th32ProcessID, pe.th32ParentProcessID, exeName);
-            free(exeName);
-
-            if (pe.th32ParentProcessID == 0) {
-                // 부모 PID가 0인 프로세스를 루트로 설정
-                root = node;
-            }
-            else {
-                // 부모 PID에 해당하는 노드를 찾아서 자식으로 추가
-                TreeNode* parent = root;
-                if (parent != NULL) {
-                    InsertChild(parent, node);
-                    totalProcess++;
-                }
-            }
-        } while (Process32Next(snapshot, &pe));
+    /// 프로세스 스냅샷 생성 ///
+    hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hProcessSnap == INVALID_HANDLE_VALUE) {
+        puts("CreateToolhelp32Snapchot 오류");
+        exit(EXIT_FAILURE);
     }
 
-    CloseHandle(snapshot);
+    /// 첫 번째 프로세스(초기화 프로세스) 얻기 ///
+    pe32.dwSize = sizeof(PROCESSENTRY32);
+    if (!Process32First(hProcessSnap, &pe32)) {
+        puts("Process32First 오류!");
+        CloseHandle(hProcessSnap);
+        exit(EXIT_FAILURE);
+    }
+    numOfProc++;
 
-    if (root != NULL) {
-        printf(" ############## Process Tree ##############\n");
-        printf("Number of Running Processes = %d\n", totalProcess + 1);
-        PrintProcessTree(root, 0);
+    /// 모든 프로세스 얻기 ///
+    PSTree pstree(pe32.szExeFile, pe32.th32ProcessID, pe32.th32ParentProcessID); // 초기 프로세스를 pstree의 루트 프로세스로 설정
+    // 다음 프로세스들의 정보를 받아 트리를 만듭니다.
+    while (Process32Next(hProcessSnap, &pe32)) {
+        pstree.addProc(pe32.szExeFile, pe32.th32ProcessID, pe32.th32ParentProcessID);
+        numOfProc++;
     }
 
-    return 0;
+    /// 출력 ///
+    puts("############### Process Tree ################");
+    printf("Number of Running Processes = %d\n", numOfProc);
+    pstree.printPSTree();
+
 }
-
-

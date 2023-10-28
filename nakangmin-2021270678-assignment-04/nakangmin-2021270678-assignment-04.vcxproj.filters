@@ -18,5 +18,19 @@
     <ClCompile Include="nakangmin-2021270678-assignment-04.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="pstree.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="process.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="process.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="pstree.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
