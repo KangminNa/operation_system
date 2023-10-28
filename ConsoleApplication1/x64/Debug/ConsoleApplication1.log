@@ -1,0 +1,4 @@
+﻿  ConsoleApplication1.cpp
+C:\GitHub\operation_system\ConsoleApplication1\ConsoleApplication1.cpp(7,1): warning C4005: 'MAX_PATH': 매크로 재정의
+C:\Program Files (x86)\Windows Kits\10\Include\10.0.22621.0\shared\minwindef.h(60,1): message : 'MAX_PATH'의 이전 정의를 참조하십시오.
+  ConsoleApplication1.vcxproj -> C:\GitHub\operation_system\ConsoleApplication1\x64\Debug\ConsoleApplication1.exe
